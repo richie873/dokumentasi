@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Dokumentasi Pekerjaan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+.desc{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;min-height:2.9em}
+.desc.none{color:var(--muted)}
+.body textarea{display:none}
+body.editing .body textarea{display:block}
+body.editing .desc{display:none}
+.editbar{border-top:1px solid var(--line);background:var(--bg)}
+.editbar .wrap{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding-block:10px;font:400 12px/1.4 var(--f-mono);color:var(--muted)}
+.body .st{display:none;min-height:1em}
+body.editing .body .st{display:block}
+.editbar .grow{flex:1;min-width:16ch}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <div class="title">
+      <p class="eyebrow">Foto kerja lapangan</p>
+      <h1>Dokumentasi Pekerjaan</h1>
+      <p class="stats"><span id="stats">Memuat foto…</span><span class="meterbar" aria-hidden="true"><i id="fill"></i></span></p>
+    </div>
+    <div class="tools">
+      <input id="q" type="search" placeholder="Cari deskripsi atau nomor" aria-label="Cari deskripsi atau nomor foto">
+      <div class="seg" role="group" aria-label="Filter">
+        <button id="f-all" type="button" aria-pressed="true">Semua</button>
+        <button id="f-empty" type="button" aria-pressed="false">Belum diisi</button>
+      </div>
+      <button id="edit" class="ghost" type="button" aria-pressed="false">Edit deskripsi</button>
+    </div>
+  </div>
+  <div id="editbar" class="editbar" hidden>
+    <div class="wrap">
+      <span class="grow" id="editinfo">Ketik deskripsi di bawah foto. Tersimpan otomatis.</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty"><strong id="et">Memuat foto…</strong><span id="es"></span></div>
+</main>
+
+<div id="lb" class="lb" role="dialog" aria-modal="true" aria-label="Foto diperbesar" hidden>
+  <div class="lbtop"><span id="lbpos"></span><button id="lbclose" class="lbbtn" type="button">Tutup</button></div>
+  <div class="lbstage">
+    <button id="lbprev" class="lbbtn" type="button" aria-label="Foto sebelumnya">&larr;</button>
+    <img id="lbimg" alt="">
+    <button id="lbnext" class="lbbtn" type="button" aria-label="Foto berikutnya">&rarr;</button>
+  </div>
+  <p id="lbcap" class="lbcap"></p>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
