@@ -1,1 +1,1 @@
-{"name":"dokumentasi-pekerjaan","private":true,"scripts":{"build":"node build.mjs","dev":"node dev.mjs"},"dependencies":{"@neondatabase/serverless":"^0.10.4"}}
+{"name":"dokumentasi-pekerjaan","private":true,"scripts":{"build":"node build.mjs","dev":"node dev.mjs"},"dependencies":{"@neondatabase/serverless":"^0.10.4","@vercel/blob":"^2.8.1"}}

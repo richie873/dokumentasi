@@ -17,6 +17,8 @@ body.editing .body textarea{display:block}
 body.editing .desc{display:none}
 .editbar{border-top:1px solid var(--line);background:var(--bg)}
 .editbar .wrap{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding-block:10px;font:400 12px/1.4 var(--f-mono);color:var(--muted)}
+.delbtn{display:none;align-self:flex-start}
+body.editing .delbtn{display:inline-block}
 .body .st{display:none;min-height:1em}
 body.editing .body .st{display:block}
 .editbar .grow{flex:1;min-width:16ch}
@@ -42,6 +44,8 @@ body.editing .body .st{display:block}
   </div>
   <div id="editbar" class="editbar" hidden>
     <div class="wrap">
+      <input id="upin" type="file" accept="image/*" multiple hidden>
+      <button id="up" class="primary" type="button">Unggah foto</button>
       <span class="grow" id="editinfo">Ketik deskripsi di bawah foto. Tersimpan otomatis.</span>
     </div>
   </div>

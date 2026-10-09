@@ -3,7 +3,7 @@
 const $ = s => document.querySelector(s);
 const grid = $('#grid'), emptyEl = $('#empty'), et = $('#et'), es = $('#es'), statsEl = $('#stats'), fillEl = $('#fill');
 const q = $('#q'), fAll = $('#f-all'), fEmpty = $('#f-empty'), editBtn = $('#edit'), editBar = $('#editbar'), editInfo = $('#editinfo');
-const toastEl = $('#toast');
+const toastEl = $('#toast'), upBtn = $('#up'), upIn = $('#upin');
 const lb = $('#lb'), lbImg = $('#lbimg'), lbCap = $('#lbcap'), lbPos = $('#lbpos'), lbPrev = $('#lbprev'), lbNext = $('#lbnext');
 
 const KEY_NAME = 'dokumentasi-kunci-v1';
@@ -11,7 +11,7 @@ let items = [], filter = 'all', pending = 0, failed = 0;
 let editKey = ''; try { editKey = localStorage.getItem(KEY_NAME) || ''; } catch (e) {}
 
 const pad = n => String(n).padStart(2, '0');
-const src = f => 'photos/' + encodeURIComponent(f);
+const src = it => it.url || ('photos/' + encodeURIComponent(it.file));
 const descOf = it => it.desc || '';
 function h(tag, props, ...kids) {
   const e = document.createElement(tag);
@@ -24,7 +24,7 @@ function toast(msg) { toastEl.textContent = msg; toastEl.hidden = false; clearTi
 
 function makeCard(it, i) {
   const c = { it, pos: i + 1 };
-  const img = h('img', { alt: 'Foto nomor ' + c.pos, loading: 'lazy', decoding: 'async', src: src(it.file) });
+  const img = h('img', { alt: 'Foto nomor ' + c.pos, loading: 'lazy', decoding: 'async', src: src(it) });
   const no = h('span', { class: 'no' }, 'No. ' + pad(c.pos));
   const plate = h('button', { class: 'plate', type: 'button', 'aria-label': 'Perbesar foto' }, img, no);
   plate.addEventListener('click', () => openLb(c));
@@ -36,8 +36,19 @@ function makeCard(it, i) {
   });
   c.ta.addEventListener('blur', () => { if (c.dirty) { clearTimeout(c.t); save(c); } });
   c.st = h('span', { class: 'st', 'aria-live': 'polite' });
+  c.del = null;
+  if (it.id) {
+    c.del = h('button', { class: 'ghost delbtn', type: 'button' }, 'Hapus foto');
+    let armed = false, tm = 0;
+    c.del.addEventListener('click', async () => {
+      if (!armed) { armed = true; c.del.textContent = 'Yakin hapus?'; c.del.classList.add('armed'); tm = setTimeout(() => { armed = false; c.del.textContent = 'Hapus foto'; c.del.classList.remove('armed'); }, 4000); return; }
+      clearTimeout(tm); c.del.disabled = true;
+      try { await api('/api/photos?id=' + it.id, { method: 'DELETE' }); items = items.filter(x => x !== c); c.el.remove(); renumber(); updateStats(); applyFilter(); toast('Foto dihapus.'); }
+      catch (e) { c.del.disabled = false; toast('Gagal menghapus foto.'); }
+    });
+  }
   c.el = h('article', { class: 'card' }, plate,
-    h('div', { class: 'body' }, h('label', { class: 'lab', 'for': 'd-' + i }, 'Deskripsi'), c.p, c.ta, c.st));
+    h('div', { class: 'body' }, h('label', { class: 'lab', 'for': 'd-' + i }, 'Deskripsi'), c.p, c.ta, c.st, c.del));
   c.ta.value = descOf(it);
   showDesc(c);
   return c;
@@ -58,16 +69,57 @@ function updateEditInfo() {
   editInfo.textContent = failed ? failed + ' deskripsi gagal tersimpan. Periksa koneksi lalu ketik ulang atau klik di luar kolom.'
     : pending ? 'Menyimpan…' : 'Deskripsi tersimpan otomatis ke database dan terlihat oleh semua orang.';
 }
-async function put(file, desc) {
-  const r = await fetch('/api/descriptions', { method: 'PUT', headers: { 'Content-Type': 'application/json', 'x-edit-key': editKey }, body: JSON.stringify({ file, desc }) });
+async function api(url, opt) {
+  opt = opt || {}; opt.headers = Object.assign({}, opt.headers, { 'x-edit-key': editKey });
+  const r = await fetch(url, opt);
   if (r.status === 401) {
     const k = prompt(editKey ? 'Kata sandi salah. Masukkan kata sandi edit:' : 'Masukkan kata sandi edit:');
     if (k === null) throw new Error('batal');
     editKey = k; try { localStorage.setItem(KEY_NAME, k); } catch (e) {}
-    return put(file, desc);
+    return api(url, opt);
   }
-  if (!r.ok) throw new Error(r.status);
+  if (!r.ok) { let m = ''; try { m = (await r.json()).error || ''; } catch (e) {} throw new Error(m || r.status); }
+  return r.json().catch(() => ({}));
 }
+const put = (file, desc) => api('/api/descriptions', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file, desc }) });
+
+function renumber() { items.forEach((c, i) => { c.pos = i + 1; c.it.pos = i + 1; c.el.querySelector('.no').textContent = 'No. ' + pad(c.pos); c.el.querySelector('img').alt = 'Foto nomor ' + c.pos; }); }
+
+/* unggah foto: diperkecil dulu di browser (maks 2400 px) agar muat batas 4 MB */
+async function shrink(file) {
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const s = Math.min(1, 2400 / Math.max(bmp.width, bmp.height));
+    const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * s); cv.height = Math.round(bmp.height * s);
+    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    for (const q of [0.85, 0.7, 0.55]) {
+      const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', q));
+      if (blob && blob.size < 3.8 * 1024 * 1024) return blob;
+    }
+  } catch (e) {}
+  if (file.size < 3.8 * 1024 * 1024) return file;
+  throw new Error('Foto terlalu besar dan tidak bisa diperkecil');
+}
+async function uploadFiles(files) {
+  const list = [...files].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic)$/i.test(f.name));
+  if (!list.length) return;
+  upBtn.disabled = true; let ok = 0, bad = 0;
+  for (let i = 0; i < list.length; i++) {
+    editInfo.textContent = 'Mengunggah foto ' + (i + 1) + ' dari ' + list.length + '…';
+    try {
+      const blob = await shrink(list[i]);
+      const row = await api('/api/photos', { method: 'POST', headers: { 'Content-Type': blob.type || 'image/jpeg', 'x-name': encodeURIComponent(list[i].name) }, body: blob });
+      const c = makeCard(toItem(row), items.length); items.push(c); grid.append(c.el); ok++; updateStats(); applyFilter();
+    } catch (e) { bad++; if (e.message === 'batal') break; }
+  }
+  upBtn.disabled = false; upIn.value = '';
+  toast(ok + ' foto diunggah' + (bad ? ', ' + bad + ' gagal.' : '.')); updateEditInfo();
+  if (ok) c_scroll();
+}
+function c_scroll() { const l = items[items.length - 1]; if (l) l.el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+const toItem = r => ({ file: 'up-' + r.id, id: r.id, url: r.url, desc: '' });
+upBtn.addEventListener('click', () => upIn.click());
+upIn.addEventListener('change', () => uploadFiles(upIn.files));
 async function save(c) {
   c.dirty = false; const v = c.it.desc; pending++; updateEditInfo();
   try { await put(c.it.file, v); if (!c.dirty) setSt(c, 'Tersimpan', 'ok'); c.failed && (failed--, c.failed = false); }
@@ -112,7 +164,7 @@ function openLb(c) {
 }
 function showLb() {
   const c = lbList[lbIdx]; if (!c) { closeLb(); return; }
-  lbImg.src = src(c.it.file); lbImg.alt = 'Foto nomor ' + c.pos;
+  lbImg.src = src(c.it); lbImg.alt = 'Foto nomor ' + c.pos;
   lbPos.textContent = 'No. ' + pad(c.pos) + '  ·  ' + (lbIdx + 1) + ' dari ' + lbList.length;
   lbCap.textContent = descOf(c.it).trim() || 'Belum ada deskripsi';
   lbPrev.disabled = lbIdx <= 0; lbNext.disabled = lbIdx >= lbList.length - 1;
@@ -130,8 +182,10 @@ document.addEventListener('keydown', e => {
 /* mulai */
 Promise.all([
   fetch('photos.json', { cache: 'no-cache' }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
-  fetch('/api/descriptions', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null)
-]).then(([list, map]) => {
+  fetch('/api/descriptions', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => null),
+  fetch('/api/photos', { cache: 'no-store' }).then(r => r.ok ? r.json() : []).catch(() => [])
+]).then(([base, map, ups]) => {
+  const list = base.concat(ups.map(toItem));
   list.forEach(it => { it.desc = (map && map[it.file]) || ''; });
   items = list.map((it, i) => makeCard(it, i));
   items.forEach(c => grid.append(c.el));
