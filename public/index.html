@@ -24,7 +24,7 @@ body.editing .body .st{display:block}
 .editbar .grow{flex:1;min-width:16ch}
 </style>
 </head>
-<body>
+<body class="editing">
 
 <header class="bar">
   <div class="wrap">
@@ -39,14 +39,13 @@ body.editing .body .st{display:block}
         <button id="f-all" type="button" aria-pressed="true">Semua</button>
         <button id="f-empty" type="button" aria-pressed="false">Belum diisi</button>
       </div>
-      <button id="edit" class="ghost" type="button" aria-pressed="false">Edit deskripsi</button>
     </div>
   </div>
-  <div id="editbar" class="editbar" hidden>
+  <div id="editbar" class="editbar">
     <div class="wrap">
       <input id="upin" type="file" accept="image/*" multiple hidden>
       <button id="up" class="primary" type="button">Unggah foto</button>
-      <span class="grow" id="editinfo">Ketik deskripsi di bawah foto. Tersimpan otomatis.</span>
+      <span class="grow" id="editinfo">Klik kolom di bawah foto lalu ketik deskripsi. Tersimpan otomatis.</span>
     </div>
   </div>
 </header>

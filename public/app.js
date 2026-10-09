@@ -2,7 +2,7 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const grid = $('#grid'), emptyEl = $('#empty'), et = $('#et'), es = $('#es'), statsEl = $('#stats'), fillEl = $('#fill');
-const q = $('#q'), fAll = $('#f-all'), fEmpty = $('#f-empty'), editBtn = $('#edit'), editBar = $('#editbar'), editInfo = $('#editinfo');
+const q = $('#q'), fAll = $('#f-all'), fEmpty = $('#f-empty'),  editInfo = $('#editinfo');
 const toastEl = $('#toast'), upBtn = $('#up'), upIn = $('#upin');
 const lb = $('#lb'), lbImg = $('#lbimg'), lbCap = $('#lbcap'), lbPos = $('#lbpos'), lbPrev = $('#lbprev'), lbNext = $('#lbnext');
 
@@ -67,7 +67,7 @@ function updateStats() {
 function setSt(c, msg, k) { c.st.textContent = msg; c.st.dataset.k = k; }
 function updateEditInfo() {
   editInfo.textContent = failed ? failed + ' deskripsi gagal tersimpan. Periksa koneksi lalu ketik ulang atau klik di luar kolom.'
-    : pending ? 'Menyimpan…' : 'Deskripsi tersimpan otomatis ke database dan terlihat oleh semua orang.';
+    : pending ? 'Menyimpan…' : 'Klik kolom di bawah foto lalu ketik deskripsi. Tersimpan otomatis dan terlihat oleh semua orang.';
 }
 async function api(url, opt) {
   opt = opt || {}; opt.headers = Object.assign({}, opt.headers, { 'x-edit-key': editKey });
@@ -146,14 +146,6 @@ fAll.addEventListener('click', () => setFilter('all'));
 fEmpty.addEventListener('click', () => setFilter('empty'));
 
 /* mode edit */
-function setEdit(on) {
-  document.body.classList.toggle('editing', on);
-  editBtn.setAttribute('aria-pressed', String(on));
-  editBtn.textContent = on ? 'Selesai edit' : 'Edit deskripsi';
-  editBar.hidden = !on;
-  if (on) updateEditInfo();
-}
-editBtn.addEventListener('click', () => setEdit(editBtn.getAttribute('aria-pressed') !== 'true'));
 
 /* pembesar foto */
 let lbList = [], lbIdx = 0, lbFrom = null;
@@ -190,6 +182,7 @@ Promise.all([
   items = list.map((it, i) => makeCard(it, i));
   items.forEach(c => grid.append(c.el));
   updateStats(); applyFilter();
-  if (!map) { editBtn.disabled = true; toast('Deskripsi tidak bisa dimuat dari database.'); }
+  updateEditInfo();
+  if (!map) { items.forEach(c => { c.ta.disabled = true; }); upBtn.disabled = true; toast('Deskripsi tidak bisa dimuat dari database.'); }
 }).catch(() => { et.textContent = 'Daftar foto tidak bisa dimuat'; es.textContent = 'Jalankan node build.mjs lalu deploy ulang.'; emptyEl.hidden = false; statsEl.textContent = ''; });
 })();
